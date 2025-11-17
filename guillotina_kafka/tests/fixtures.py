@@ -19,7 +19,7 @@ def base_settings_configurator(settings):
 testing.configure_with(base_settings_configurator)
 
 
-@pytest.fixture('function')
+@pytest.fixture(name="function")
 def kafka_container(kafka):
     app_settings.setdefault('kafka', {})
     app_settings['kafka'].update({

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.4.0
+-----
+
+- Fix python 3.12 compatibility
+
 2.3.7
 -----
 

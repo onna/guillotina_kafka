@@ -154,7 +154,10 @@ class StartConsumersCommand(ServerCommand):
                     )
                     consumer.subscribe(topics=[topic_id], listener=listener)
                     self.tasks.append(self.run_consumer(worker, consumer, worker_conf))
-        asyncio.create_task(asyncio.wait(self.tasks))
+        
+        # Start all consumers as background tasks
+        for consumer_coro in self.tasks:
+            asyncio.create_task(consumer_coro)
 
     def run(self, arguments, settings, app):
         app.on_startup.append(partial(self._run, arguments))
