@@ -44,10 +44,6 @@ class StartConsumerCommand(ServerCommand):
             '--consumer-group', type=str, help='Application consumer group.'
         )
         parser.add_argument(
-            '--api-version', type=str,
-            default='auto', help='Kafka server api version.'
-        )
-        parser.add_argument(
             '--take', type=int
         )
         parser.add_argument(
@@ -114,7 +110,6 @@ class StartConsumerCommand(ServerCommand):
                 worker=consumer_worker,
                 group_id=(
                     arguments.consumer_group or worker.get('group', 'default')).format(topic=topics[0]),
-                api_version=arguments.api_version,
                 bootstrap_servers=app_settings['kafka']['brokers']
             )
         except KeyError:

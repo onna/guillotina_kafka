@@ -20,10 +20,6 @@ class SendMessageCommand(Command):
         parser.add_argument(
             '--data', type=str, help='Data to send to the topic.'
         )
-        parser.add_argument(
-            '--api-version', type=str,
-            default='auto', help='Kafka server api version.'
-        )
         return parser
 
     async def send(self, arguments, settings):
@@ -35,7 +31,6 @@ class SendMessageCommand(Command):
         await producer.setup(
             bootstrap_servers=settings['kafka']['brokers'],
             value_serializer=serializer,
-            api_version=arguments.api_version
         )
 
         if arguments.interactive:

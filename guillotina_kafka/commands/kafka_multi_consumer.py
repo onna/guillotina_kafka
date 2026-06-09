@@ -41,9 +41,6 @@ class StartConsumersCommand(ServerCommand):
             nargs="+",
             help="Application consumer that will consume messages from topics.",
         )
-        parser.add_argument(
-            "--api-version", type=str, default="auto", help="Kafka server api version."
-        )
         return parser
 
     def get_worker_conf(self, name):
@@ -114,7 +111,6 @@ class StartConsumersCommand(ServerCommand):
             worker_names = [worker_names]
 
         conn_settings = {
-            "api_version": arguments.api_version,
             "bootstrap_servers": app_settings["kafka"]["brokers"],
             "loop": self.get_loop(),
         }
