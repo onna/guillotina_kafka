@@ -1,23 +1,13 @@
 import asyncio
 from argparse import Namespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from guillotina import app_settings
+from guillotina_kafka.commands import kafka_consumer
 from guillotina_kafka.commands import kafka_multi_consumer
-
-
-class RecordingConsumer:
-    instances = []
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        RecordingConsumer.instances.append(self)
-
-    def subscribe(self, *args, **kwargs):
-        pass
+from guillotina_kafka.commands import kafka_producer
 
 
 class _Worker:
@@ -27,37 +17,41 @@ class _Worker:
         return
 
 
-class _App:
-    def __init__(self):
-        self.on_startup = []
-
-
-@pytest.mark.asyncio
-async def test_start_consumers_does_not_forward_api_version_to_aiokafka():
-    app_settings["kafka"] = {
+def _kafka_settings():
+    return {
         "brokers": ["localhost:9092"],
         "consumer": {
             "topics": [],
             "workers": [
                 {
                     "name": "test-worker",
-                    "path": (
-                        "guillotina_kafka.tests."
-                        "test_no_api_version_forwarding._Worker"
-                    ),
+                    "path": f"{__name__}._Worker",
                     "topics": ["test-topic"],
                 }
             ],
         },
     }
-    RecordingConsumer.instances = []
+
+
+def _assert_not_forwarded(fake):
+    assert fake.call_args_list, "expected an aiokafka constructor to be called"
+    for call in fake.call_args_list:
+        assert "api_version" not in call.kwargs, (
+            f"api_version must not be forwarded; got {call.kwargs}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_start_consumers_does_not_forward_api_version(monkeypatch):
+    monkeypatch.setitem(app_settings, "kafka", _kafka_settings())
 
     command = kafka_multi_consumer.StartConsumersCommand()
     command.loop = asyncio.get_running_loop()
     arguments = Namespace(consumer_worker=["test-worker"], api_version="auto")
 
+    fake = MagicMock()
     with patch.object(
-        kafka_multi_consumer, "AIOKafkaConsumer", RecordingConsumer
+        kafka_multi_consumer, "AIOKafkaConsumer", fake
     ), patch.object(
         kafka_multi_consumer.StartConsumersCommand,
         "run_consumer",
@@ -65,45 +59,13 @@ async def test_start_consumers_does_not_forward_api_version_to_aiokafka():
     ), patch.object(
         kafka_multi_consumer.asyncio, "create_task", lambda *a, **k: None
     ):
-        await command._run(arguments, _App())
+        await command._run(arguments, None)
 
-    assert RecordingConsumer.instances, "expected an AIOKafkaConsumer to be constructed"
-    for consumer in RecordingConsumer.instances:
-        assert "api_version" not in consumer.kwargs, (
-            "api_version must not be forwarded to AIOKafkaConsumer; "
-            f"got {consumer.kwargs}"
-        )
+    _assert_not_forwarded(fake)
 
 
-class RecordingSingleConsumer:
-    instances = []
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        RecordingSingleConsumer.instances.append(self)
-
-
-def test_start_consumer_does_not_forward_api_version_to_aiokafka():
-    from guillotina_kafka.commands import kafka_consumer
-
-    app_settings["kafka"] = {
-        "brokers": ["localhost:9092"],
-        "consumer": {
-            "topics": [],
-            "workers": [
-                {
-                    "name": "test-worker",
-                    "path": (
-                        "guillotina_kafka.tests."
-                        "test_no_api_version_forwarding._Worker"
-                    ),
-                    "topics": ["test-topic"],
-                }
-            ],
-        },
-    }
-    RecordingSingleConsumer.instances = []
+def test_start_consumer_does_not_forward_api_version(monkeypatch):
+    monkeypatch.setitem(app_settings, "kafka", _kafka_settings())
 
     command = kafka_consumer.StartConsumerCommand()
     arguments = Namespace(
@@ -117,21 +79,18 @@ def test_start_consumer_does_not_forward_api_version_to_aiokafka():
         within=None,
     )
 
+    fake = MagicMock()
     with patch.object(
-        kafka_consumer, "StreamConsumer", RecordingSingleConsumer
+        kafka_consumer, "StreamConsumer", fake
     ), patch.object(
         kafka_consumer, "get_adapter", lambda consumer, *a, **k: consumer
     ):
         command.get_consumer(arguments)
 
-    assert RecordingSingleConsumer.instances, "expected a consumer to be constructed"
-    for consumer in RecordingSingleConsumer.instances:
-        assert "api_version" not in consumer.kwargs, (
-            f"api_version must not be forwarded; got {consumer.kwargs}"
-        )
+    _assert_not_forwarded(fake)
 
 
-class RecordingProducer:
+class _RecordingProducer:
     def __init__(self):
         self.setup_kwargs = None
 
@@ -149,10 +108,8 @@ class RecordingProducer:
 
 
 @pytest.mark.asyncio
-async def test_send_message_does_not_forward_api_version_to_aiokafka():
-    from guillotina_kafka.commands import kafka_producer
-
-    producer = RecordingProducer()
+async def test_send_message_does_not_forward_api_version():
+    producer = _RecordingProducer()
     command = kafka_producer.SendMessageCommand()
     arguments = Namespace(
         serializer="bytes",
@@ -168,6 +125,5 @@ async def test_send_message_does_not_forward_api_version_to_aiokafka():
 
     assert producer.setup_kwargs is not None, "producer.setup was not called"
     assert "api_version" not in producer.setup_kwargs, (
-        "api_version must not be forwarded to producer.setup; "
-        f"got {producer.setup_kwargs}"
+        f"api_version must not be forwarded to producer.setup; got {producer.setup_kwargs}"
     )
