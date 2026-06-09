@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.4.1
+-----
+
+- Stop forwarding ``api_version`` to aiokafka constructors (removed in aiokafka>=0.13.0)
+
 2.4.0
 -----
 

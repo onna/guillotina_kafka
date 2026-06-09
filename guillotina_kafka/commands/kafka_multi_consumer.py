@@ -114,7 +114,6 @@ class StartConsumersCommand(ServerCommand):
             worker_names = [worker_names]
 
         conn_settings = {
-            "api_version": arguments.api_version,
             "bootstrap_servers": app_settings["kafka"]["brokers"],
             "loop": self.get_loop(),
         }

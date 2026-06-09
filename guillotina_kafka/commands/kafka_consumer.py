@@ -114,7 +114,6 @@ class StartConsumerCommand(ServerCommand):
                 worker=consumer_worker,
                 group_id=(
                     arguments.consumer_group or worker.get('group', 'default')).format(topic=topics[0]),
-                api_version=arguments.api_version,
                 bootstrap_servers=app_settings['kafka']['brokers']
             )
         except KeyError:

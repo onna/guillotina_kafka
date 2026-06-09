@@ -35,7 +35,6 @@ class SendMessageCommand(Command):
         await producer.setup(
             bootstrap_servers=settings['kafka']['brokers'],
             value_serializer=serializer,
-            api_version=arguments.api_version
         )
 
         if arguments.interactive:
