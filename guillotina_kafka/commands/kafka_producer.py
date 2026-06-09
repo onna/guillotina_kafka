@@ -20,10 +20,6 @@ class SendMessageCommand(Command):
         parser.add_argument(
             '--data', type=str, help='Data to send to the topic.'
         )
-        parser.add_argument(
-            '--api-version', type=str,
-            default='auto', help='Kafka server api version.'
-        )
         return parser
 
     async def send(self, arguments, settings):

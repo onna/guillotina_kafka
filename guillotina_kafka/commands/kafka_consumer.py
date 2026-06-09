@@ -44,10 +44,6 @@ class StartConsumerCommand(ServerCommand):
             '--consumer-group', type=str, help='Application consumer group.'
         )
         parser.add_argument(
-            '--api-version', type=str,
-            default='auto', help='Kafka server api version.'
-        )
-        parser.add_argument(
             '--take', type=int
         )
         parser.add_argument(
