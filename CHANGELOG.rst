@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.4.2
+-----
+
+- Add ``MANIFEST.in`` to include ``VERSION`` in the sdist (fixes packages building as ``0.0.0`` when installed from source)
+
 2.4.1
 -----
 
